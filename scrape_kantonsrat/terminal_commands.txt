@@ -1,0 +1,37 @@
+### Preparation ###
+acr_id="leomathesiscontregistry.azurecr.io"
+docker login $acr_id -u leomathesiscontregistry -p <<password>>
+docker build --tag $acr_id/selenium_scrape_kantonsrat .
+docker push $acr_id/selenium_scrape_kantonsrat:latest
+
+az login
+
+
+### New setup ###
+rg="rg-leore-001"
+loc="Switzerland North"
+plan="leomathesis-ASP"
+stor="leomathesisstorageacc"
+fun="scrapekantonsrat"
+az storage account create -n $stor -g $rg --sku Standard_LRS
+az appservice plan create --name $plan --resource-group $rg --sku P1v2 --is-linux
+az functionapp create --resource-group $rg --os-type Linux --plan  $plan --functions-version 4 --deployment-container-image-name $acr_id/selenium_scrape_kantonsrat:latest --name  $fun --storage-account $stor --docker-registry-server-user leomathesiscontregistry --docker-registry-server-password <<password>>
+
+adls=kantonsratstorageacc
+container_name=ongoingfullcollection
+az storage account create --name $adls --resource-group $rg --location $loc --sku Standard_RAGRS --kind StorageV2 --enable-hierarchical-namespace true
+az storage container create --account-name $adls -n $container_name
+az webapp identity assign --name $fun --resource-group $rg
+az functionapp config appsettings set --name $fun --resource-group $rg --settings par_storage_account_name=$adls par_storage_container_name=$container_name par_function_start_year=1995 par_function_end_year=2023
+
+# Give fun MI RBAC role to ADLS gen 2 account --> Manually!
+
+
+### Update function with new code version ###
+docker build --tag $acr_id/selenium_scrape_kantonsrat .
+docker push $acr_id/selenium_scrape_kantonsrat:latest
+az functionapp create --resource-group $rg --os-type Linux --plan  $plan --functions-version 4 --deployment-container-image-name $acr_id/selenium_scrape_kantonsrat:latest --name  $fun --storage-account $stor --docker-registry-server-user leomathesiscontregistry --docker-registry-server-password <<password>>
+az webapp identity assign --name $fun --resource-group $rg
+az functionapp config appsettings set --name $fun --resource-group $rg --settings par_storage_account_name=$adls par_storage_container_name=$container_name par_function_start_year=1995 par_function_end_year=2023
+
+# see log at https://scrapekantonsrat.scm.azurewebsites.net/api/logstream
