@@ -1,0 +1,12 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "name": "pdfblob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "ongoingfullcollection/{name}",
+      "connection": "ongoingfullcollection"
+    }
+  ]
+}

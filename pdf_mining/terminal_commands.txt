@@ -1,0 +1,17 @@
+### Preparation ###
+rg="rg-leore-001"
+loc="Switzerland North"
+plan="leomathesis-ASP"
+stor="leomathesisstorageacc"
+fun="kantonsratpdfmining"
+
+### New setup ###
+az functionapp create --resource-group $rg --os-type Linux --plan  $plan --functions-version 4 --name  $fun --storage-account $stor --runtime python --runtime-version 3.10
+az webapp identity assign --name $fun --resource-group $rg
+az functionapp config appsettings set --name $fun --resource-group $rg --settings DB_HOST=kantonsrat-database.postgres.database.azure.com DB_NAME=kantonsrat DB_USER=kantonsratadmin DB_PW=<<password>> ongoingfullcollection="DefaultEndpointsProtocol=https;AccountName=kantonsratstorageacc;AccountKey=<<password>>;EndpointSuffix=core.windows.net"
+
+### Count BLOBs ###
+az storage blob list -c "ongoingfullcollection" --account-key "<<password>>" --account-name "kantonsratstorageacc" --query "length(@)" -o table
+
+### Delete all BLOBs ###
+az storage blob delete-batch --source "ongoingfullcollection" --account-name "kantonsratstorageacc"
