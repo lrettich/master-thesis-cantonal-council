@@ -1,0 +1,8 @@
+# Get number of nodes
+g.V().groupCount().by('type')
+
+# Get number of edges
+g.E().groupCount().by(label())
+
+# Get topics containing ZKB
+g.V().has('topic_words', 'zkb')
