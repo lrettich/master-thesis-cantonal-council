@@ -1,0 +1,18 @@
+### Preparation
+az login
+
+### Push docker image ###
+acr_id="leomathesiscontregistry.azurecr.io"
+docker login $acr_id -u leomathesiscontregistry -p <<password>>
+docker build --tag $acr_id/politician_import .
+docker push $acr_id/politician_import:latest
+
+### Set up Azure services ###
+rg="rg-leore-001"
+loc="Switzerland North"
+plan="leomathesis-ASP"
+stor="leomathesisstorageacc"
+fun="politicianimport"
+az functionapp create --resource-group $rg --os-type Linux --plan  $plan --functions-version 4 --deployment-container-image-name $acr_id/politician_import:latest --name  $fun --storage-account $stor --docker-registry-server-user leomathesiscontregistry --docker-registry-server-password <<password>>
+az webapp identity assign --name $fun --resource-group $rg
+az functionapp config appsettings set --name $fun --resource-group $rg --settings DB_HOST=kantonsrat-database.postgres.database.azure.com DB_NAME=kantonsrat DB_USER=kantonsratadmin DB_PW=<<password>>
